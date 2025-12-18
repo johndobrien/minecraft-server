@@ -1,7 +1,7 @@
 
 services:
   mc:
-    image: itzg/minecraft-server:latest
+    build: .
     tty: true
     stdin_open: true
     ports:
@@ -10,6 +10,10 @@ services:
       EULA: "TRUE"
       DEBUG: "TRUE"
       ONLINE_MODE: "FALSE"
+      INIT_MEMORY: 1G
+      MAX_MEMORY: 4G
+      VERSION: 1.19.2
+      TYPE: FORGE
     volumes:
       # attach the relative directory 'data' to the container's /data path
       - ./data:/data
