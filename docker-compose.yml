@@ -8,12 +8,10 @@ services:
       - "25565:25565"
     environment:
       EULA: "TRUE"
-      DEBUG: "TRUE"
-      ONLINE_MODE: "FALSE"
-      INIT_MEMORY: 1G
-      MAX_MEMORY: 4G
-      VERSION: 1.19.2
-      TYPE: FORGE
+      ONLINE_MODE: ${MINECRAFT_ONLINE_MODE}
+      INIT_MEMORY: ${MINECRAFT_INIT_MEMORY}
+      MAX_MEMORY: ${MINECRAFT_MAX_MEMORY}
+      VERSION: ${MINECRAFT_VERSION}
+      TYPE: ${MINECRAFT_TYPE}
     volumes:
-      # attach the relative directory 'data' to the container's /data path
       - ./data:/data

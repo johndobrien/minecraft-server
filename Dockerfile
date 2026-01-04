@@ -1,5 +1,9 @@
 FROM itzg/minecraft-server:latest
 
+
+WORKDIR /data
+COPY ./mods ./mods
+
 # Expose the default Minecraft port
 EXPOSE 25565
 
