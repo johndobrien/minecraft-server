@@ -69,22 +69,22 @@ export class MinecraftServerStatck extends Stack {
   constructor(scope: App, id: string, props: IMinecraftServerStackProps) {
     super(scope, id, props);
 
-    const vpcResources = new VPCResources(this, `${id}}-VPC`, {
+    const vpcResources = new VPCResources(this, `${id}-VPC`, {
       ingressPort: props.minecraftServerConfig.ingressPort,
     });
     
-    const snsResources = new SNSResources(this, `${id}}-SNS`, {
+    const snsResources = new SNSResources(this, `${id}-SNS`, {
       snsEmail: props.snsEmail,
     });
 
-    const route53Resources = new Route53Resources(this, `${id}}-Route53`, {
+    const route53Resources = new Route53Resources(this, `${id}-Route53`, {
       domain: props.route53Domain,
       hostedZoneId: props.route53HostedZoneId,
       serverSubDomain: props.route53ServerSubDomain,
       usEast1LogGroupArn: props.usEastLogGroupArn,
     });
 
-    const ecsResources = createECSResources(this, `${id}}-ECS`, {
+    const ecsResources = createECSResources(this, `${id}-ECS`, {
       cpuSize: props.ecsCpuSize,
       domain: props.route53Domain,
       enablePersistence: props.ecsEnablePersistence,
