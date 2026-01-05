@@ -1,15 +1,15 @@
 import { Construct } from 'constructs';
 import { Vpc, SubnetType, SecurityGroup, Peer, Port } from 'aws-cdk-lib/aws-ec2';
 
-export interface VPCResourcesProps {
-  ingressRule: Port;
+export interface IVPCResourcesProps {
+  ingressPort: Port;
 }
 
 export class VPCResources extends Construct {
   public readonly securityGroup: SecurityGroup;
   public readonly vpc: Vpc;
 
-  constructor(scope: Construct, id: string, props: VPCResourcesProps) {
+  constructor(scope: Construct, id: string, props: IVPCResourcesProps) {
     super(scope, id);
 
     // Create VPC
@@ -40,7 +40,7 @@ export class VPCResources extends Construct {
     // Add ingress rule
     this.securityGroup.addIngressRule(
       Peer.anyIpv4(),
-      props.ingressRule,
+      props.ingressPort,
       `${id}-AllowServerTraffic`,
       false
     );

@@ -4,16 +4,15 @@ import { Stack, StackProps, App } from "aws-cdk-lib";
 import { getEnvOrDefault, getRequiredEnv,} from "./common";
 import { VPCResources } from "./vpc";
 import { Route53Resources } from "./route53";
-import { Protocol } from "aws-cdk-lib/aws-ec2";
+import { Port } from "aws-cdk-lib/aws-ec2";
 import { LambdaResources } from "./lambda";
 
 
 // Define ServerConfig interface
 export interface IServerConfig {
   port: number;
-  image: string;
   debug: boolean;
-  ingressPort: any; // Placeholder, should be ec2.Port
+  ingressPort: Port; // Placeholder, should be ec2.Port
 }
 
 export interface IMinecraftServerStackProps extends StackProps {
@@ -34,15 +33,11 @@ export interface IMinecraftServerStackProps extends StackProps {
 // Configure server based on edition
 function configureServer(debug: string): IServerConfig {
   let port = 25565;
-  let protocol = Protocol.TCP;
   let image = "itzg/minecraft-server";
-  // TODO: Replace with ec2.Port
-  let ingressPort: any = { port, protocol: "TCP" };
   return {
-    port,
-    image,
+    port: port,
     debug: debug === "true",
-    ingressPort,
+    ingressPort: Port.tcp(port),
   };
 }
 
@@ -74,29 +69,28 @@ export class MinecraftServerStatck extends Stack {
   constructor(scope: App, id: string, props: IMinecraftServerStackProps) {
     super(scope, id, props);
 
-    const vpcResources = new VPCResources(this, "VPCResources", {
-      ingressRule: props.minecraftServerConfig.ingressPort,
+    const vpcResources = new VPCResources(this, `${id}}-VPC`, {
+      ingressPort: props.minecraftServerConfig.ingressPort,
     });
-
-    const snsResources = new SNSResources(this, "SNSResources", {
+    
+    const snsResources = new SNSResources(this, `${id}}-SNS`, {
       snsEmail: props.snsEmail,
     });
 
-    const route53Resources = new Route53Resources(this, "Route53Resources", {
+    const route53Resources = new Route53Resources(this, `${id}}-Route53`, {
       domain: props.route53Domain,
       hostedZoneId: props.route53HostedZoneId,
       serverSubDomain: props.route53ServerSubDomain,
       usEast1LogGroupArn: props.usEastLogGroupArn,
     });
 
-    const ecsResources = createECSResources(this, "ECSResources", {
+    const ecsResources = createECSResources(this, `${id}}-ECS`, {
       cpuSize: props.ecsCpuSize,
       domain: props.route53Domain,
       enablePersistence: props.ecsEnablePersistence,
       hostedZoneId: props.route53HostedZoneId,
       memorySize: props.ecsMemorySize,
       serverDebug: props.minecraftServerConfig.debug,
-      serverImage: props.minecraftServerConfig.image,
       serverPort: props.minecraftServerConfig.port,
       serverSubDomain: props.route53ServerSubDomain,
       shutdownMin: props.ecsShutdownMin,
@@ -107,7 +101,7 @@ export class MinecraftServerStatck extends Stack {
       securityGroup: vpcResources.securityGroup,
     });
 
-    new LambdaResources(this, "LambdaResources", {
+    new LambdaResources(this, `${id}-Lambda`, {
       queryLogGroup:   route53Resources.queryLogGroup,
 		  cluster:         ecsResources.cluster,
 		  service:         ecsResources.service,

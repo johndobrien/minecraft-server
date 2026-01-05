@@ -46,7 +46,7 @@ export class LambdaResources extends Construct {
     // Create Lambda function using the PROVIDED_AL2023 runtime and ARM_64 architecture
     const launcherLambda = new NodejsFunction(this, `${id}-LauncherLambda`, {
       functionName: `${id}-LauncherLambda`,
-      entry: path.join(__dirname, '../lambda/launcher/index.ts'),
+      entry: path.join(__dirname, '../src/launcher/index.ts'),
       role: lambdaRole,
       handler: 'handler',
       logRetention: RetentionDays.FIVE_DAYS,

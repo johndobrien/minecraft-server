@@ -15,9 +15,11 @@ export function getMinecraftEnvironemtnVairables(): {[k: string]: any } {
   const envVars: {[k: string]: any } = {};
   const minecraftEnvPrefix = 'MINECRAFT_';
   const regex = new RegExp(`^${minecraftEnvPrefix}`);
-  for (const [key, value] of Object.entries(process.env)) {
+  var entries = Object.entries(process.env);
+  for (const [key, value] of entries) {
     if (key.startsWith(minecraftEnvPrefix)) {
-      envVars[key.replace.(regex, '')] = value;
+      var k = key.replace(regex, '');
+      envVars[k] = value;
     } 
   }
   return envVars

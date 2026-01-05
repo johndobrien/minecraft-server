@@ -7,6 +7,7 @@ import { Role, ServicePrincipal, PolicyDocument, PolicyStatement, Policy } from 
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { Topic } from 'aws-cdk-lib/aws-sns';
 import { getMinecraftEnvironemtnVairables } from './common';
+import { DockerImageAsset } from 'aws-cdk-lib/aws-ecr-assets';
 
 
 
@@ -21,7 +22,6 @@ export interface IECSResourcesProps {
   snsTopic: Topic;
   startupMin: string;
   shutdownMin: string;
-  serverImage: string;
   serverPort: number;
   serverDebug: boolean;
   subDomainHostedZoneId: string;
@@ -34,7 +34,7 @@ export interface IECSResources {
   service: FargateService;
 }
 
-export function createECSResources(scope: Construct, id: string, props: IECSResourcesProps): IECSResources {
+export function createECSResources(scope: Construct, id: string, props: IECSResourcesProps): any {
   // Create ECS Cluster
   const clusterId = `${id}-Cluster`;
 
@@ -54,7 +54,7 @@ export function createECSResources(scope: Construct, id: string, props: IECSReso
     fileSystem = new FileSystem(scope, fsId, {
       vpc: props.vpc,
       fileSystemName: fsId,
-      removalPolicy: RemovalPolicy.RETAIN,
+      removalPolicy: RemovalPolicy.DESTROY,
     });
 
     const accessPointId = `${id}-AccessPoint`;
@@ -72,7 +72,7 @@ export function createECSResources(scope: Construct, id: string, props: IECSReso
       },
     });
   }
-
+  
   // IAM Role for ECS Tasks
   const taskRoleId = `${id}-TaskRole`;
   const taskRole = new Role(scope, taskRoleId, {
@@ -95,38 +95,15 @@ export function createECSResources(scope: Construct, id: string, props: IECSReso
     },
   });
 
-  // Fargate Task Definition
-  const taskDefId = `${id}-TaskDefinition`;
-  const task = new FargateTaskDefinition(scope, taskDefId, {
-    memoryLimitMiB: parseFloat(props.memorySize),
-    cpu: parseFloat(props.cpuSize),
-    runtimePlatform: {
-      operatingSystemFamily: OperatingSystemFamily.LINUX,
-      cpuArchitecture: CpuArchitecture.ARM64,
-    },
-    taskRole,
-  });
+  var mincreaftEnvVars = getMinecraftEnvironemtnVairables();
+  
 
-  // Fargate Service
-  const serviceId = `${id}-FargateService`;
-  const service = new FargateService(scope, serviceId, {
-    serviceName: serviceId,
-    cluster,
-    capacityProviderStrategies: [
-      {
-        capacityProvider: 'FARGATE',
-        weight: 1,
-        base: 1,
-      },
-    ],
-    taskDefinition: task,
-    assignPublicIp: true,
-    desiredCount: 0,
-    vpcSubnets: { subnetType: SubnetType.PUBLIC } as SubnetSelection,
-    securityGroups: [props.securityGroup],
-    enableExecuteCommand: true,
-  });
+  // Main Server Container Definition
+  const containerId = `${id}-ServerContainer`;
 
+  var dockerImage = new DockerImageAsset(scope, `${id}-DockerImage`, {
+    directory: "../",
+  });
   // Logging
   let loggingDriver: LogDriver | undefined;
   if (props.serverDebug) {
@@ -137,12 +114,18 @@ export function createECSResources(scope: Construct, id: string, props: IECSReso
     });
   }
 
-  var mincreaftEnvVars = getMinecraftEnvironemtnVairables();
+  const containerImage = ContainerImage.fromDockerImageAsset(dockerImage);
+  
+  // Fargate Task Definition
+  const taskDefId = `${id}-TaskDefinition`;
+  const taskDef = new FargateTaskDefinition(scope, taskDefId, {
+    memoryLimitMiB: parseFloat(props.memorySize),
+    cpu: parseFloat(props.cpuSize),
+    taskRole,
+  });
 
-  // Main Server Container Definition
-  const containerId = `${id}-ServerContainer`;
-  const serverContainer = task.addContainer(containerId, {
-    image: ContainerImage.fromRegistry(props.serverImage),
+  const serverContainer = taskDef.addContainer(containerId, {
+    image: containerImage,
     environment: {
       EULA: 'TRUE',
       ...mincreaftEnvVars,
@@ -158,9 +141,29 @@ export function createECSResources(scope: Construct, id: string, props: IECSReso
     logging: loggingDriver,
   });
 
+  // Fargate Service
+  const serviceId = `${id}-FargateService`;
+  const service = new FargateService(scope, serviceId, {
+    serviceName: serviceId,
+    cluster,
+    capacityProviderStrategies: [
+      {
+        capacityProvider: 'FARGATE',
+        weight: 1,
+        base: 1,
+      },
+    ],
+    taskDefinition: taskDef,
+    assignPublicIp: true,
+    desiredCount: 0,
+    vpcSubnets: { subnetType: SubnetType.PUBLIC } as SubnetSelection,
+    securityGroups: [props.securityGroup],
+    enableExecuteCommand: true,
+  });
+
   if (props.enablePersistence && fileSystem && accessPoint) {
     const volumeId = `${id}-DataVolume`;
-    task.addVolume({
+    taskDef.addVolume({
       name: volumeId,
       efsVolumeConfiguration: {
         fileSystemId: fileSystem.fileSystemId,
@@ -180,11 +183,11 @@ export function createECSResources(scope: Construct, id: string, props: IECSReso
 
     fileSystem.connections.allowDefaultPortFrom(service, 'Allow ECS service to access EFS');
   }
-
+  /*
   // Add Watchdog Container
   const watchdogContainerId = `${id}-WatchdogContainer`;
-  task.addContainer(watchdogContainerId, {
-    image: ContainerImage.fromAsset('./cmd/watchdog', { file: 'Dockerfile' }),
+  taskDef.addContainer(watchdogContainerId, {
+    image: ContainerImage.fromAsset('./src/watchdog', { file: 'Dockerfile' }),
     essential: true,
     environment: {
       CLUSTER: cluster.clusterName,
@@ -207,8 +210,8 @@ export function createECSResources(scope: Construct, id: string, props: IECSReso
       new PolicyStatement({
         actions: ['ecs:*'],
         resources: [
-          task.taskDefinitionArn,
-          `${task.taskDefinitionArn}/*`,
+          taskDef.taskDefinitionArn,
+          `${taskDef.taskDefinitionArn}/*`,
           service.serviceArn,
           `${service.serviceArn}/*`,
           cluster.clusterArn,
@@ -230,9 +233,9 @@ export function createECSResources(scope: Construct, id: string, props: IECSReso
     ],
   });
   serverPolicy.attachToRole(taskRole);
-
+  */
   return {
-    task,
+    taskDef,
     cluster,
     service,
   };

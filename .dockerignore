@@ -1,0 +1,22 @@
+# Ignore the .git directory and its contents
+.git
+# Ignore the .dockerignore file itself (it is processed before being sent)
+.dockerignore
+# Ignore hidden files/directories (optional, useful in some cases)
+.*
+# Ignore common development/build artifacts
+node_modules
+build
+dist
+**/__pycache__
+*.pyc
+# Ignore development-specific files
+npm-debug.log
+yarn-error.log
+# Ignore documentation and environment files that aren't needed in the final image
+README.md
+LICENSE
+Makefile
+docker-compose.yml
+.env
+cdk

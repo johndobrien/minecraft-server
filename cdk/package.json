@@ -20,8 +20,15 @@
     "typescript": "~5.9.3"
   },
   "dependencies": {
+    "@aws-sdk/client-ec2": "^3.962.0",
+    "@aws-sdk/client-ecs": "^3.962.0",
+    "@aws-sdk/client-route-53": "^3.962.0",
+    "@aws-sdk/client-sns": "^3.962.0",
+    "@aws-sdk/core": "^3.957.0",
     "@types/aws-lambda": "^8.10.159",
     "aws-cdk-lib": "2.232.1",
-    "constructs": "^10.0.0"
+    "constructs": "^10.0.0",
+    "dotenv": "^17.2.3",
+    "esbuild": "^0.27.2"
   }
 }

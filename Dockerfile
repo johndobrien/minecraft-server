@@ -1,11 +1,14 @@
 FROM itzg/minecraft-server:latest
 
 
-WORKDIR /data
+WORKDIR /data_temp
 COPY ./mods ./mods
 
 # Expose the default Minecraft port
 EXPOSE 25565
 
-# The default CMD is already set in the base image to start the server
-CMD ["/start"]
+WORKDIR /
+
+COPY copy_mods_and_start.sh copy_mods_and_start.sh
+RUN chmod +x copy_mods_and_start.sh
+CMD ["./copy_mods_and_start.sh"]
