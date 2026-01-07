@@ -183,7 +183,7 @@ export function createECSResources(scope: Construct, id: string, props: IECSReso
 
     fileSystem.connections.allowDefaultPortFrom(service, 'Allow ECS service to access EFS');
   }
-  /*
+  
   // Add Watchdog Container
   const watchdogContainerId = `${id}-WatchdogContainer`;
   taskDef.addContainer(watchdogContainerId, {
@@ -233,7 +233,7 @@ export function createECSResources(scope: Construct, id: string, props: IECSReso
     ],
   });
   serverPolicy.attachToRole(taskRole);
-  */
+
   return {
     taskDef,
     cluster,
